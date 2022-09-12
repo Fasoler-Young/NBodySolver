@@ -9,6 +9,10 @@ NBodyData::NBodyData()
 	current_total_potential_energy = 0.;
 	prev_tottal_potential_energy = 0.;
 	current_total_kinetic_energy = 0.;
+	prev_total_kinetic_energy = 0.;
+	current_total_impulse = vector3();
+	prev_total_impulse = vector3();
+
 
 }
 
@@ -29,11 +33,14 @@ void NBodyData::increase_time(value_type dt)
 	step++;
 }
 
+// ≈сли радиус меньше минимального взаимодействие все равно есть, так что, 
+// возможно, следует и потенциальную энергию высчитывать
 value_type NBodyData::potential_energy(size_t body1, size_t body2) const
 {
-	if ((coord[body1] - coord[body2]).length() < NBODY_MIN_RADIUS) 
-		return 0;
-	return -G * mass[body1] * mass[body2] / sqrt((coord[body1] - coord[body2]).length());
+	value_type dr = (coord[body1] - coord[body2]).length();
+	if ( dr < NBODY_MIN_RADIUS) 
+		return dr = NBODY_MIN_RADIUS;
+	return -G * mass[body1] * mass[body2] / dr;
 }
 
 value_type NBodyData::get_time() const
@@ -145,6 +152,18 @@ void NBodyData::dump_errors(std::string path)
 	
 }
 
+vector3 NBodyData::calculate_total_impulse()
+{
+	prev_total_impulse = current_total_impulse;
+	current_total_impulse = vector3();
+	vector3 cor;
+	#pragma omp parallel for
+	for (int body = 0; body < count; body++) {
+		current_total_impulse = Kahan_sum(current_total_impulse, velosites[body] * mass[body], &cor);
+	}
+	return current_total_impulse;
+}
+
 // –ассчитывает потенциальную энергию и сохран€ет предыдущее значение, возвращает новое значение
 value_type NBodyData::calculate_total_potential_energy()
 {
@@ -174,6 +193,23 @@ value_type NBodyData::calculate_total_kinetic_energy()
 	return current_total_kinetic_energy;
 }
 
+void NBodyData::calculate_total_energy()
+{
+	calculate_total_kinetic_energy();
+	calculate_total_potential_energy();
+}
+
+vector3 NBodyData::calculate_total_force(vector3 d_coord, size_t id)
+{
+	vector3 total_force;
+	vector3 correction;
+	for (size_t body2 = 0; body2 < count; body2++) {
+		if(id != body2)
+			total_force = Kahan_sum(total_force, force(coord[id] + d_coord, coord[body2], mass[id], mass[body2]), &correction);
+	}
+	return total_force;
+}
+
 
 
 
@@ -188,9 +224,12 @@ void NBodyData::generate_galaxy(vector3 center, value_type radius, value_type to
 	add_body(center, vector3(), total_mass * 0.999);
 	value_type body_mass = (total_mass - mass[0]) / (count - 1);
 	for (size_t body = 1; body < count; body++) {
-		vector3 norm(-radius, radius);
+		value_type direction = rand() % 2 == 0 ? 1. : -1.;
+		vector3 norm(0, 0, direction);
+		//vector3 norm(-radius, radius);
 		vector3 new_body(-radius, radius);
 		norm = new_body ^ norm;
+		norm = norm * vector3(0.1, 0.15);
 		value_type velosity_multiplicator = sqrt( G * mass[0] / (new_body - center).length() );
 		vector3 velosity = norm / norm.length() * velosity_multiplicator;
 		add_body(new_body, velosity, body_mass);
@@ -199,14 +238,29 @@ void NBodyData::generate_galaxy(vector3 center, value_type radius, value_type to
 
 }
 
+vector3 NBodyData::total_impulse() const
+{
+	return current_total_impulse;
+}
+
 value_type NBodyData::total_energy() const
 {
 	return current_total_kinetic_energy + current_total_potential_energy;
 }
 
+vector3 NBodyData::last_total_impulse() const
+{
+	return prev_total_impulse;
+}
+
 value_type NBodyData::last_total_energy() const
 {
 	return prev_total_kinetic_energy + prev_tottal_potential_energy;
+}
+
+value_type NBodyData::impulce_err() const
+{
+	return 100 * ((last_total_impulse() - total_impulse()).length() / total_impulse().length());
 }
 
 value_type NBodyData::energy_err() const

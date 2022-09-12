@@ -56,7 +56,7 @@ public:
 		return *this;
 	}
 
-	Point3<T> operator - (const Point3<T>& V)const {
+	Point3<T> operator - (const Point3& V)const {
 		return Point3<T>(x - V.x, y - V.y, z - V.z);
 	}
 
@@ -65,6 +65,10 @@ public:
 		y -= V.y;
 		z -= V.y;
 		return *this;
+	}
+
+	Point3<T> operator / (const Point3& V) const {
+		return Point3(x / V.x, y / V.y, z / V.z);
 	}
 
 	Point3<T> operator / (const T V)const {

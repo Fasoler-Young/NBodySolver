@@ -10,6 +10,7 @@ class FileManager
 	value_type dt;
 	value_type end_time;
 	size_t dump_step;
+	value_type dump_time;
 	size_t output_files_count;
 
 	std::fstream filestream;
@@ -19,12 +20,16 @@ public:
 
 	value_type get_end_time() const;
 	size_t get_dump_step() const;
+	value_type get_dump_time() const;
 	value_type get_output_files_count() const;
-	value_type get_dt() const;
+	value_type* get_dt();
+	value_type next_dump_time(value_type cur_time);
+	
 
 	void dump_galaxy(NBodyData* data);
 	void dump_errors(NBodyData* data);
 
+	void set_dt(value_type new_t);
 	std::string get_path_config() const;
 	std::string get_path_data_input() const;
 	std::string get_path_data_output();

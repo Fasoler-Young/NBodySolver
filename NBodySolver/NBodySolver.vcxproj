@@ -136,12 +136,14 @@
     <ClCompile Include="NBodeSolverEuler.cpp" />
     <ClCompile Include="NBodyData.cpp" />
     <ClCompile Include="NBodySolver.cpp" />
+    <ClCompile Include="NBodySolverRungeKutta.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="FileManager.h" />
     <ClInclude Include="NBodeSolverEuler.h" />
     <ClInclude Include="NBodyData.h" />
     <ClInclude Include="NBodySolver.h" />
+    <ClInclude Include="NBodySolverRungeKutta.h" />
     <ClInclude Include="Point3.h" />
   </ItemGroup>
   <ItemGroup>

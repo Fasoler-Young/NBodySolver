@@ -16,10 +16,10 @@ FileManager::FileManager(std::string path_conf, NBodyData* data)
 	
 	// Флаг о том, что задача генерируется случайно
 	if(paths["path_data_input"] == "generate"){
-		dt = 1e-6;
-		end_time = 20;
+		dt = 1e-5;
+		end_time = 2.5;
 		output_files_count = 151;
-		data->generate_galaxy(vector3(), 10., 10., 100);
+		data->generate_galaxy(vector3(), 20., 10., 50);
 	}
 	else {
 		// Читаем данные задачи
@@ -46,6 +46,7 @@ FileManager::FileManager(std::string path_conf, NBodyData* data)
 		filestream.close();
 	}
 	dump_step = ceil(end_time / dt / output_files_count);
+	dump_time = end_time / output_files_count;
 
 }
 
@@ -59,14 +60,24 @@ size_t FileManager::get_dump_step() const
 	return dump_step;
 }
 
+value_type FileManager::get_dump_time() const
+{
+	return dump_time;
+}
+
 value_type FileManager::get_output_files_count() const
 {
 	return output_files_count;
 }
 
-value_type FileManager::get_dt() const
+value_type* FileManager::get_dt() 
 {
-	return dt;
+	return &dt;
+}
+
+value_type FileManager::next_dump_time(value_type cur_time)
+{
+	return (int(cur_time / dump_time) + 1) * dump_time;
 }
 
 void FileManager::dump_galaxy(NBodyData* data)
@@ -99,9 +110,16 @@ void FileManager::dump_errors(NBodyData* data)
 		<< prev_total_kinetic_energy - current_total_kinetic_energy << SEPARATOR
 		<< (prev_total_kinetic_energy - current_total_kinetic_energy) +
 		(prev_tottal_potential_energy - current_total_potential_energy) << std::endl;*/
-		<< data->energy_err() << std::endl;
+		<< data->energy_err() << SEPARATOR
+		<< data->impulce_err()
+		<< std::endl;
 
 	filestream.close();
+}
+
+void FileManager::set_dt(value_type new_t)
+{
+	dt = new_t;
 }
 
 std::string FileManager::get_path_config() const

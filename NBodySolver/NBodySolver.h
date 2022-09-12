@@ -9,7 +9,7 @@ class NBodySolver
 public:
 	NBodySolver(NBodyData* data);
 	NBodyData* get_data();
-	virtual void step(value_type dt) = 0;
+	virtual void step(value_type* dt) = 0;
 };
 
 
