@@ -35,9 +35,17 @@ void NBodySolverEuler::step(value_type *dt)
 		}
 		dv[id_body1] = total_force / mass[id_body1];
 		velosites[id_body1] = get_data()->Kahan_sum(velosites[id_body1], dv[id_body1] * *dt, &correction_velosites[id_body1]);
-		coord[id_body1] = get_data()->Kahan_sum(coord[id_body1], velosites[id_body1] * *dt, &correction_coord[id_body1]);
+		
+	}
+	for (int body = 0; body < count; body++) {
+		coord[body] = get_data()->Kahan_sum(coord[body], velosites[body] * *dt, &correction_coord[body]);
 
 	}
 	get_data()->increase_time(*dt);
 
+}
+
+std::string NBodySolverEuler::method_name()
+{
+	return "euler";
 }

@@ -13,6 +13,12 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Файлы заголовков\Solvers">
+      <UniqueIdentifier>{fcf7219d-4d2d-4cee-a9e3-0026e5fdff2e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Исходные файлы\Solvers">
+      <UniqueIdentifier>{62f2bdd9-482e-4d67-8634-22da1d01f20f}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -21,16 +27,22 @@
     <ClCompile Include="NBodyData.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
-    <ClCompile Include="NBodySolver.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
-    <ClCompile Include="NBodeSolverEuler.cpp">
-      <Filter>Исходные файлы</Filter>
-    </ClCompile>
     <ClCompile Include="FileManager.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
+    <ClCompile Include="NBodeSolverEuler.cpp">
+      <Filter>Исходные файлы\Solvers</Filter>
+    </ClCompile>
     <ClCompile Include="NBodySolverRungeKutta.cpp">
+      <Filter>Исходные файлы\Solvers</Filter>
+    </ClCompile>
+    <ClCompile Include="NBodySolverDormanPrince.cpp">
+      <Filter>Исходные файлы\Solvers</Filter>
+    </ClCompile>
+    <ClCompile Include="NBodySolver.cpp">
+      <Filter>Исходные файлы\Solvers</Filter>
+    </ClCompile>
+    <ClCompile Include="NBodySolverAdamsBashfort.cpp">
       <Filter>Исходные файлы</Filter>
     </ClCompile>
   </ItemGroup>
@@ -38,19 +50,28 @@
     <ClInclude Include="NBodyData.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
-    <ClInclude Include="NBodySolver.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
     <ClInclude Include="Point3.h">
-      <Filter>Файлы заголовков</Filter>
-    </ClInclude>
-    <ClInclude Include="NBodeSolverEuler.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
     <ClInclude Include="FileManager.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
+    <ClInclude Include="NBodySolver.h">
+      <Filter>Файлы заголовков\Solvers</Filter>
+    </ClInclude>
+    <ClInclude Include="NBodySolverDormanPrince.h">
+      <Filter>Файлы заголовков\Solvers</Filter>
+    </ClInclude>
     <ClInclude Include="NBodySolverRungeKutta.h">
+      <Filter>Файлы заголовков\Solvers</Filter>
+    </ClInclude>
+    <ClInclude Include="NBodeSolverEuler.h">
+      <Filter>Файлы заголовков\Solvers</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>Файлы заголовков</Filter>
+    </ClInclude>
+    <ClInclude Include="NBodySolverAdamsBashfort.h">
       <Filter>Файлы заголовков</Filter>
     </ClInclude>
   </ItemGroup>
@@ -64,5 +85,10 @@
     <None Include="G:\NBody\Plot.plt">
       <Filter>Файлы ресурсов</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="NBodySolver.rc">
+      <Filter>Файлы ресурсов</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>

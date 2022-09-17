@@ -11,5 +11,6 @@ class NBodySolverEuler :
 public:
     NBodySolverEuler(NBodyData* data);
     void step(value_type *dt);
+    std::string method_name();
 };
 

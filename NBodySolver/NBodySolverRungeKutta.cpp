@@ -28,16 +28,29 @@ NBodySolverRungeKutta::NBodySolverRungeKutta(NBodyData* data) : NBodySolverEuler
 
 void NBodySolverRungeKutta::step(value_type* dt)
 {
-	stepRK45(dt);
+	// Они нужны для метода Адамса Башфорта
+	//std::vector<vector3> tmp1, tmp2;
+	stepRK4(dt, NULL, NULL);
 }
 
-void NBodySolverRungeKutta::stepRK4(value_type* dt)
+// В нашем методе ни скорость, ни координата не зависят в явном виде от времени,
+// поэтому можно сказать, что функции времени и скорости кусочно-постоянные и на временном шаге неизменяемы
+// Функция скорости возвращает приращение координаты, мы умножаем на dt т.к. y_n+1 = y_n + sum(b_i*k_i)
+// Где k_i = dt * dv/dt
+// Приращение координаты при таком подходе сходится по порядку с методом Эйлера
+void NBodySolverRungeKutta::stepRK4(value_type* dt, vector3* d_coord, vector3* d_v)
 {
 	vector3* coord = get_data()->get_coord();
 	vector3* velosites = get_data()->get_velosites();
 	const value_type* mass = get_data()->get_mass();
 	size_t count = get_data()->get_count();
 
+	if (d_coord == NULL) {
+		std::vector<vector3> tmp1(count), tmp2(count);
+		d_coord = tmp1.data();
+		d_v = tmp2.data();
+	}
+	
 	if (k1_c.size() != count)
 		resize_k(count);
 
@@ -67,11 +80,27 @@ void NBodySolverRungeKutta::stepRK4(value_type* dt)
 		vector3 total_force(get_data()->calculate_total_force(k3_c[body_id] / 2., body_id));
 		k4_v[body_id] = total_force / mass[body_id] * *dt;
 		k4_c[body_id] = (velosites[body_id] + k3_v[body_id] / 2.) * *dt;
+		// TODO вынести изменение координат в отдельный цикл
+		d_coord[body_id] = ((k1_c[body_id] + k2_c[body_id] * 2 + k3_c[body_id] * 2 + k4_c[body_id]) / 6.);
+		d_v[body_id] = ((k1_v[body_id] + k2_v[body_id] * 2 + k3_v[body_id] * 2 + k4_v[body_id]) / 6.);
 
-		velosites[body_id] += (k1_v[body_id] + k2_v[body_id] * 2 + k3_v[body_id] * 2 + k4_v[body_id]) / 6.;
-		coord[body_id] += (k1_c[body_id] + k2_c[body_id] * 2 + k3_c[body_id] * 2 + k4_c[body_id]) / 6.;
+	}
+#pragma omp parallel for
+	for (int body = 0; body < count; body++) {
+		velosites[body] += d_v[body];
+		coord[body] += d_coord[body];
 	}
 	get_data()->increase_time(*dt);
+}
+
+std::string NBodySolverRungeKutta::method_name()
+{
+	return "rk4";
+}
+
+void NBodySolverRungeKutta::set_max_local_err(value_type err)
+{
+	local_err = err;
 }
 
 
@@ -129,7 +158,7 @@ void NBodySolverRungeKutta::stepRK45(value_type* dt)
 	value_type min_h_new = 10;
 	value_type max_TE = 0.;
 	value_type TE = 0.;
-	value_type eps = 1e-15;
+	value_type eps = 1e-16;
 #pragma omp parallel for
 	for (int body_id = 0; body_id < count; body_id++) {
 		vector3 total_force(get_data()->calculate_total_force(k1_c[body_id] * B6[1] + k2_c[body_id] * B6[2] + k3_c[body_id] * B6[3] + k4_c[body_id] * B6[4] + k5_c[body_id] * B6[5], body_id));
@@ -141,7 +170,7 @@ void NBodySolverRungeKutta::stepRK45(value_type* dt)
 		//velosites[body_id] += k1_v[body_id] * CH[1] + k2_v[body_id] * CH[2] + k3_v[body_id] * CH[3] + k4_v[body_id] * CH[4] + k5_v[body_id] * CH[5] + k6_v[body_id] * CH[6];
 
 		TE = (k1_c[body_id] * CT[1] + k2_c[body_id] * CT[2] + k3_c[body_id] * CT[3] + k4_c[body_id] * CT[4] + k5_c[body_id] * CT[5] + k6_c[body_id] * CT[6]).length();
-		value_type temp = 0.9 * *dt * pow((eps / TE), 1. / 5.);
+		value_type temp = 0.9 * *dt * pow((local_err / TE), 1. / 5.);
 
 		if (max_TE < TE)
 			max_TE = TE;
@@ -152,17 +181,17 @@ void NBodySolverRungeKutta::stepRK45(value_type* dt)
 		//	// repeat step with h_new
 		//}
 	}
-	if (max_TE <= eps) {
+	if (max_TE <= local_err) {
 		#pragma omp parallel for
 		for (int body_id = 0; body_id < count; body_id++) {
-			coord[body_id] += k1_c[body_id] * CH[1] + k2_c[body_id] * CH[2] + k3_c[body_id] * CH[3] + k4_c[body_id] * CH[4] + k5_c[body_id] * CH[5] + k6_c[body_id] * CH[6];
 			velosites[body_id] += k1_v[body_id] * CH[1] + k2_v[body_id] * CH[2] + k3_v[body_id] * CH[3] + k4_v[body_id] * CH[4] + k5_v[body_id] * CH[5] + k6_v[body_id] * CH[6];
+			coord[body_id] += k1_c[body_id] * CH[1] + k2_c[body_id] * CH[2] + k3_c[body_id] * CH[3] + k4_c[body_id] * CH[4] + k5_c[body_id] * CH[5] + k6_c[body_id] * CH[6];
 		}
 		get_data()->increase_time(*dt);
 		*dt = min_h_new;
 	}
 	else {
-		std::cout << "Restep: " << *dt << '\t' << min_h_new << '\t' << max_TE << std::endl;
+		//std::cout << "Restep: " << *dt << '\t' << min_h_new << '\t' << max_TE << std::endl;
 		*dt = min_h_new;
 		stepRK45(dt);
 	}

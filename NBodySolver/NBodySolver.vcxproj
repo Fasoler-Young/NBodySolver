@@ -136,6 +136,8 @@
     <ClCompile Include="NBodeSolverEuler.cpp" />
     <ClCompile Include="NBodyData.cpp" />
     <ClCompile Include="NBodySolver.cpp" />
+    <ClCompile Include="NBodySolverAdamsBashfort.cpp" />
+    <ClCompile Include="NBodySolverDormanPrince.cpp" />
     <ClCompile Include="NBodySolverRungeKutta.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -143,13 +145,19 @@
     <ClInclude Include="NBodeSolverEuler.h" />
     <ClInclude Include="NBodyData.h" />
     <ClInclude Include="NBodySolver.h" />
+    <ClInclude Include="NBodySolverAdamsBashfort.h" />
+    <ClInclude Include="NBodySolverDormanPrince.h" />
     <ClInclude Include="NBodySolverRungeKutta.h" />
     <ClInclude Include="Point3.h" />
+    <ClInclude Include="resource.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="G:\NBody\Plot.plt" />
     <None Include="out.csv" />
     <None Include="test.csv" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="NBodySolver.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

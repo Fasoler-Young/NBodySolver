@@ -1,8 +1,68 @@
 #include "FileManager.h"
 
+void FileManager::create_solvers(NBodyData* data)
+{
+	std::string solver_name;
+	filestream >> solver_name;
+	// Нет смылсла оптимизировать, компилятор все равно удаляет ненужные
+	NBodySolverEuler* euler = new NBodySolverEuler(data);
+	NBodySolverRungeKutta* runge_kutta = new NBodySolverRungeKutta(data);
+	NBodySolverDormanPrince* dormane_prince = new NBodySolverDormanPrince(data);
+	NBodySolverAdamsBashfort* adams = new NBodySolverAdamsBashfort(data);
+	if (!solver_name.compare(euler->method_name()))
+		solver = euler;
+	else if (!solver_name.compare(runge_kutta->method_name())) {
+		value_type local_err;
+		filestream >> local_err;
+		runge_kutta->set_max_local_err(local_err);
+		solver = runge_kutta;
+
+	}
+	else if (!solver_name.compare(dormane_prince->method_name())) {
+		value_type local_err;
+		filestream >> local_err;
+		dormane_prince->set_max_local_err(local_err);
+		solver = dormane_prince;
+	}
+	else if (!solver_name.compare(adams->method_name())) {
+		solver = adams;
+	}
+		
+}
+
+// !!! Метод пока неустойчив к ошибкам в файле и надо это иметь в виду
+void FileManager::create_galaxy(NBodyData* data)
+{
+	std::string type;
+	filestream >> type;
+	if (!type.compare("generate")) {
+		vector3 center;
+		value_type radius, total_mass;
+		size_t count;
+		filestream >> center.x >> center.y >> center.z
+			>> radius >> total_mass >> count;
+		data->generate_galaxy(center, radius, total_mass, count);
+	}
+	else {
+		std::vector<value_type> param;
+		value_type tmp;
+		while (filestream >> tmp)
+		{
+			param.push_back(tmp);
+			if (param.size() == 7) {
+				data->add_body(param);
+				param.clear();
+			}
+		}
+	}
+
+}
+
 FileManager::FileManager(std::string path_conf, NBodyData* data)
 {
-	
+	total_calculate_err_time = total_step_time = total_write_time = 0;
+
+
 	// Читаем конфигурацию для определения путей
 	paths["path_config"] = path_conf;
 	filestream.open(paths["path_config"], std::ios::in);
@@ -11,41 +71,36 @@ FileManager::FileManager(std::string path_conf, NBodyData* data)
 	while (filestream >> key) {
 		filestream >> paths[key];
 	}
+
 	filestream.close();
 
 	
-	// Флаг о том, что задача генерируется случайно
-	if(paths["path_data_input"] == "generate"){
-		dt = 1e-5;
-		end_time = 2.5;
-		output_files_count = 151;
-		data->generate_galaxy(vector3(), 20., 10., 50);
-	}
-	else {
+	//// Флаг о том, что задача генерируется случайно
+	//if(paths["path_data_input"] == "generate"){
+	//	dt = 1e-8;
+	//	end_time = 2.5;
+	//	output_files_count = 151;
+	//	data->generate_galaxy(vector3(), 20., 10., 10);
+	//}
+	//else {
+	// 
 		// Читаем данные задачи
-		auto loc = std::locale(std::locale(), new MyCharCType());
-		filestream.imbue(loc);
+	auto loc = std::locale(std::locale(), new MyCharCType());
+	filestream.imbue(loc);
 
-		filestream.ignore(std::numeric_limits<std::streamsize>::max(),
-			filestream.widen('\n'));
-		filestream.open(paths["path_data_input"], std::ios::in);
-		value_type data1;
+	filestream.ignore(std::numeric_limits<std::streamsize>::max(),
+		filestream.widen('\n'));
+	filestream.open(paths["path_data_input"], std::ios::in);
 
-		// Начальный шаг и время расчетов индивидуальны для задачи
-		filestream >> dt >> end_time >> output_files_count;
+	// Начальный шаг и время расчетов индивидуальны для задачи
+	filestream >> dt >> end_time >> output_files_count;
+	create_solvers(data);
+	create_galaxy(data);
 
-		std::vector<value_type> param;
-		while (filestream >> data1)
-		{
-			param.push_back(data1);
-			if (param.size() == 7) {
-				data->add_body(param);
-				param.clear();
-			}
-		}
-		filestream.close();
-	}
-	dump_step = ceil(end_time / dt / output_files_count);
+
+	filestream.close();
+	//}
+	dump_step = size_t(ceil(end_time / dt / output_files_count));
 	dump_time = end_time / output_files_count;
 
 }
@@ -65,7 +120,7 @@ value_type FileManager::get_dump_time() const
 	return dump_time;
 }
 
-value_type FileManager::get_output_files_count() const
+size_t FileManager::get_output_files_count() const
 {
 	return output_files_count;
 }
@@ -80,8 +135,24 @@ value_type FileManager::next_dump_time(value_type cur_time)
 	return (int(cur_time / dump_time) + 1) * dump_time;
 }
 
+void FileManager::step()
+{
+	size_t start = clock();
+	solver->step(&dt);
+	total_step_time += clock() - start;
+}
+
+void FileManager::calculate_condition(NBodyData* data)
+{
+	int start = clock();
+	data->calculate_total_energy();
+	data->calculate_total_impulse();
+	total_calculate_err_time += clock() - start;
+}
+
 void FileManager::dump_galaxy(NBodyData* data)
 {
+	size_t start = clock();
 	static size_t file_number = 0;
 	
 	filestream.open(get_path_data_output().replace(get_path_data_output().find("%i"), 2, std::to_string(file_number)), std::ios::out);
@@ -93,13 +164,13 @@ void FileManager::dump_galaxy(NBodyData* data)
 	}
 	file_number++;
 	filestream.close();
+	total_write_time += clock() - start;
 }
 
 void FileManager::dump_errors(NBodyData* data)
 {
+	size_t start = clock();
 	static bool first_run = true;
-	std::vector<vector3> correction_vector(3, vector3());
-	std::vector<value_type> correction_scalar(2, 0.);
 	if (first_run) {
 		first_run = false;
 		std::fstream clear_file(get_path_data_error(), std::ios::out);
@@ -111,15 +182,64 @@ void FileManager::dump_errors(NBodyData* data)
 		<< (prev_total_kinetic_energy - current_total_kinetic_energy) +
 		(prev_tottal_potential_energy - current_total_potential_energy) << std::endl;*/
 		<< data->energy_err() << SEPARATOR
-		<< data->impulce_err()
+		<< data->impulce_err() << SEPARATOR
+		<< data->total_energy() << SEPARATOR
+		<< data->total_impulse().length() << SEPARATOR
 		<< std::endl;
 
 	filestream.close();
+	total_write_time += clock() - start;
+}
+
+void FileManager::log(NBodyData* data, value_type E_0, value_type P_0)
+{
+	size_t start = clock();
+	static bool first_run = true;
+	if (first_run) {
+		first_run = false;
+		std::fstream clear_file(get_path_log(), std::ios::out);
+		clear_file << "dump\t" << "time\t" << "E_0-E_cur\t" << "P_0-P_cur\t" << "tot_stp_time\t" << "tot_wr_time\t" << "tot_clc_err_time\n";
+		std::cout  << "dump\t" << "time\t" << "E_0-E_cur\t" << "P_0-P_cur\t" << "tot_stp_time\t" << "tot_wr_time\t" << "tot_clc_err_time\n";
+		clear_file.close();
+	}
+	filestream.open(get_path_log(), std::ios_base::app);
+	filestream << size_t(data->get_time() / dump_time) << '\t'
+		<< size_t(data->get_time() * 100) / 100. << '\t'
+		<< fabs(E_0 - data->total_energy()) << '\t'
+		<< fabs(P_0 - data->total_impulse().length()) << '\t'
+		<< total_step_time << '\t'
+		<< total_write_time << '\t'
+		<< total_calculate_err_time << '\t'
+		<< dt
+		<< std::endl;
+	filestream.close();
+	std::cout << size_t(data->get_time() / dump_time) << '\t'
+		<< size_t(data->get_time() * 100) / 100. << '\t'
+		<< fabs(E_0 - data->total_energy()) << '\t'
+		<< fabs(P_0 - data->total_impulse().length()) << '\t'
+		<< total_step_time << '\t'
+		<< total_write_time << '\t'
+		<< total_calculate_err_time << '\t'
+		<< dt << std::endl;
+	
+	total_write_time += clock() - start;
+
 }
 
 void FileManager::set_dt(value_type new_t)
 {
 	dt = new_t;
+}
+
+std::string FileManager::get_method_name()
+{
+	std::string tmp = solver->method_name();
+	return tmp;
+}
+
+std::string FileManager::get_path_log()
+{
+	return paths.at("path_log");
 }
 
 std::string FileManager::get_path_config() const

@@ -20,7 +20,7 @@ private:
     // Çהוסü k_c 
     std::vector<vector3> k1_c, k2_c, k3_c, k4_c, k5_c, k6_c;
     std::vector<vector3> k1_v, k2_v, k3_v, k4_v, k5_v, k6_v;
-
+    value_type local_err = 1e-18;
     std::vector<vector3> tmp;
 
     void resize_k(size_t new_size);
@@ -30,6 +30,9 @@ public:
     NBodySolverRungeKutta(NBodyData* data);
     void step(value_type* dt);
     void stepRK45(value_type* dt);
-    void stepRK4(value_type* dt);
+    void stepRK4(value_type* dt, vector3* d_coord, vector3* d_v);
+    std::string method_name();
+    void set_max_local_err(value_type err);
+
 };
 

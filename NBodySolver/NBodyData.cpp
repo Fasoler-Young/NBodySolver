@@ -229,7 +229,7 @@ void NBodyData::generate_galaxy(vector3 center, value_type radius, value_type to
 		//vector3 norm(-radius, radius);
 		vector3 new_body(-radius, radius);
 		norm = new_body ^ norm;
-		norm = norm * vector3(0.1, 0.15);
+		//norm = norm * vector3(0.1, 0.15);
 		value_type velosity_multiplicator = sqrt( G * mass[0] / (new_body - center).length() );
 		vector3 velosity = norm / norm.length() * velosity_multiplicator;
 		add_body(new_body, velosity, body_mass);
@@ -260,7 +260,7 @@ value_type NBodyData::last_total_energy() const
 
 value_type NBodyData::impulce_err() const
 {
-	return 100 * ((last_total_impulse() - total_impulse()).length() / total_impulse().length());
+	return 100 * ((last_total_impulse().length() - total_impulse().length()) / total_impulse().length());
 }
 
 value_type NBodyData::energy_err() const
