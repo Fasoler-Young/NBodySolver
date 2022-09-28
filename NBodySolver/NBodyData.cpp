@@ -5,6 +5,7 @@ NBodyData::NBodyData()
 	time = 0;
 	step = 0;
 	count = 0;
+	count_of_function_calls = 0;
 
 	current_total_potential_energy = 0.;
 	prev_tottal_potential_energy = 0.;
@@ -76,6 +77,16 @@ const vector3* NBodyData::get_velosites() const
 const value_type* NBodyData::get_mass() const
 {
 	return mass.data();
+}
+
+value_type NBodyData::get_potential_energy()
+{
+	return current_total_potential_energy;
+}
+
+value_type NBodyData::get_kinetik_energy()
+{
+	return current_total_kinetic_energy;
 }
 
 void NBodyData::load_galaxy(const char* path)
@@ -172,13 +183,14 @@ value_type NBodyData::calculate_total_potential_energy()
 	for (size_t body1 = 0; body1 < count; body1++) {
 		value_type pot_energy = 0.;
 		value_type cor = 0.;
-		for (size_t body2 = 0; body2 < count; body2++) {
-			if (body1 == body2)
-				continue;
+		for (size_t body2 = body1 + 1; body2 < count; body2++) {
+			//if (body1 == body2)
+			//	continue;
 			current_total_potential_energy = Kahan_sum(current_total_potential_energy, potential_energy(body1, body2), &cor);
 		}
 		// current_total_potential_energy += Kahan_sum(current_total_potential_energy, pot_energy, &cor);
 	}
+	//current_total_potential_energy /= 2;
 	return current_total_potential_energy;
 }
 
@@ -188,7 +200,7 @@ value_type NBodyData::calculate_total_kinetic_energy()
 	current_total_kinetic_energy = 0.;
 	value_type cor = 0.;
 	for (size_t body = 0; body < count; body++) {
-		current_total_kinetic_energy = Kahan_sum(current_total_kinetic_energy, mass[body] * velosites[body].norm() / 2, &cor);
+		current_total_kinetic_energy = Kahan_sum(current_total_kinetic_energy, mass[body] * velosites[body].norm() / 2., &cor);
 	}
 	return current_total_kinetic_energy;
 }
@@ -207,6 +219,7 @@ vector3 NBodyData::calculate_total_force(vector3 d_coord, size_t id)
 		if(id != body2)
 			total_force = Kahan_sum(total_force, force(coord[id] + d_coord, coord[body2], mass[id], mass[body2]), &correction);
 	}
+	count_of_function_calls++;
 	return total_force;
 }
 
@@ -219,19 +232,25 @@ size_t NBodyData::get_count() const
 	return count;
 }
 
-void NBodyData::generate_galaxy(vector3 center, value_type radius, value_type total_mass, size_t count)
+void NBodyData::generate_galaxy(vector3 center, value_type radius, value_type total_mass, size_t count, vector3 velosites)
 {
-	add_body(center, vector3(), total_mass * 0.999);
+	add_body(center, velosites, total_mass * 0.999);
 	value_type body_mass = (total_mass - mass[0]) / (count - 1);
 	for (size_t body = 1; body < count; body++) {
 		value_type direction = rand() % 2 == 0 ? 1. : -1.;
 		vector3 norm(0, 0, direction);
 		//vector3 norm(-radius, radius);
+		value_type inner_radius = radius * 0.1;
 		vector3 new_body(-radius, radius);
+		while (new_body.length() < inner_radius) {
+			new_body = vector3(-radius, radius);
+		}
 		norm = new_body ^ norm;
-		//norm = norm * vector3(0.1, 0.15);
-		value_type velosity_multiplicator = sqrt( G * mass[0] / (new_body - center).length() );
-		vector3 velosity = norm / norm.length() * velosity_multiplicator;
+		//norm = norm * vector3(0.1, 0.3);
+		value_type velosity_multiplicator = sqrt( G * mass[0] / (new_body).length() );
+		new_body += center;
+
+		vector3 velosity = norm / norm.length() * velosity_multiplicator + velosites;
 		add_body(new_body, velosity, body_mass);
 
 	}
@@ -266,6 +285,11 @@ value_type NBodyData::impulce_err() const
 value_type NBodyData::energy_err() const
 {
 	return fabs(100 * (last_total_energy() - total_energy()) / total_energy());
+}
+
+size_t NBodyData::get_number_of_function_calls()
+{
+	return count_of_function_calls;
 }
 
 //vector3 NBodyData::total_impulse() const

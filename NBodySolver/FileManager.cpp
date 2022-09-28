@@ -16,7 +16,6 @@ void FileManager::create_solvers(NBodyData* data)
 		filestream >> local_err;
 		runge_kutta->set_max_local_err(local_err);
 		solver = runge_kutta;
-
 	}
 	else if (!solver_name.compare(dormane_prince->method_name())) {
 		value_type local_err;
@@ -27,6 +26,8 @@ void FileManager::create_solvers(NBodyData* data)
 	else if (!solver_name.compare(adams->method_name())) {
 		solver = adams;
 	}
+	std::cout << "method from file: " << solver_name << "\t current method: " << solver->method_name() << std::endl;
+
 		
 }
 
@@ -41,7 +42,9 @@ void FileManager::create_galaxy(NBodyData* data)
 		size_t count;
 		filestream >> center.x >> center.y >> center.z
 			>> radius >> total_mass >> count;
-		data->generate_galaxy(center, radius, total_mass, count);
+		value_type v = -1; //2.23606797749979;
+		data->generate_galaxy(center - vector3(1.5, 1, 0), radius, total_mass, count, vector3(0, -v, 0));
+		data->generate_galaxy(center + vector3(1.5, 1, 0), radius, total_mass, count, vector3(0, v, 0));
 	}
 	else {
 		std::vector<value_type> param;
@@ -99,6 +102,9 @@ FileManager::FileManager(std::string path_conf, NBodyData* data)
 
 
 	filestream.close();
+	calculate_condition(data);
+	E_0 = data->total_energy();
+	P_0 = data->total_impulse().length();
 	//}
 	dump_step = size_t(ceil(end_time / dt / output_files_count));
 	dump_time = end_time / output_files_count;
@@ -177,14 +183,17 @@ void FileManager::dump_errors(NBodyData* data)
 		clear_file.close();
 	}
 	filestream.open(get_path_data_error(), std::ios_base::app);
-	filestream /*<< prev_tottal_potential_energy - current_total_potential_energy << SEPARATOR
-		<< prev_total_kinetic_energy - current_total_kinetic_energy << SEPARATOR
-		<< (prev_total_kinetic_energy - current_total_kinetic_energy) +
-		(prev_tottal_potential_energy - current_total_potential_energy) << std::endl;*/
-		<< data->energy_err() << SEPARATOR
-		<< data->impulce_err() << SEPARATOR
-		<< data->total_energy() << SEPARATOR
-		<< data->total_impulse().length() << SEPARATOR
+	filestream 
+		<< data->energy_err() << SEPARATOR							// 1
+		<< data->impulce_err() << SEPARATOR							// 2
+		<< data->total_energy() << SEPARATOR						// 3
+		<< data->total_impulse().length() << SEPARATOR				// 4
+		<< E_0 - data->total_energy() << SEPARATOR					// 5
+		<< P_0 - data->total_impulse().length() << SEPARATOR		// 6
+		<< data->get_potential_energy() << SEPARATOR				// 7
+		<< data->get_kinetik_energy() << SEPARATOR					// 8
+		<< fabs((E_0 - data->total_energy()) / E_0) << SEPARATOR	// 9
+
 		<< std::endl;
 
 	filestream.close();
@@ -195,6 +204,7 @@ void FileManager::log(NBodyData* data, value_type E_0, value_type P_0)
 {
 	size_t start = clock();
 	static bool first_run = true;
+	bool last_log = data->get_time() > end_time;
 	if (first_run) {
 		first_run = false;
 		std::fstream clear_file(get_path_log(), std::ios::out);
@@ -212,6 +222,14 @@ void FileManager::log(NBodyData* data, value_type E_0, value_type P_0)
 		<< total_calculate_err_time << '\t'
 		<< dt
 		<< std::endl;
+	if (last_log) {
+		filestream << fabs(E_0 - data->total_energy()) << '\n'
+			<< fabs(P_0 - data->total_impulse().length()) << '\n'
+			<< data->get_number_of_function_calls() << '\n'
+			<< data->get_step() << '\n'
+			<< solver->method_name();
+
+	}
 	filestream.close();
 	std::cout << size_t(data->get_time() / dump_time) << '\t'
 		<< size_t(data->get_time() * 100) / 100. << '\t'
@@ -221,7 +239,14 @@ void FileManager::log(NBodyData* data, value_type E_0, value_type P_0)
 		<< total_write_time << '\t'
 		<< total_calculate_err_time << '\t'
 		<< dt << std::endl;
-	
+	if (last_log) {
+		std::cout << fabs(E_0 - data->total_energy()) << '\n'
+			<< fabs(P_0 - data->total_impulse().length()) << '\n'
+			<< data->get_number_of_function_calls() << '\n'
+			<< data->get_step() << '\n'
+			<< solver->method_name();
+
+	}
 	total_write_time += clock() - start;
 
 }

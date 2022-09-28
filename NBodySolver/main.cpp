@@ -22,7 +22,7 @@ int main() {
 	std::string name = "";
 	//data.calculate_total_energy();
 	//data.calculate_total_impulse();
-	fm.calculate_condition(&data);
+	//fm.calculate_condition(&data);
 	value_type start_energy = data.total_energy();
 	value_type start_impulse = data.total_impulse().length();
 	bool need_dump = false;
@@ -49,13 +49,16 @@ int main() {
 		fm.calculate_condition(&data);
 
 	}
+	fm.dump_galaxy(&data);
+	fm.dump_errors(&data);
+	fm.log(&data, start_energy, start_impulse);
 	//data.calculate_total_energy();
 	//data.calculate_total_impulse();
-	std::cout << fabs(start_energy - data.total_energy()) << '\n'
-		<< fabs(start_impulse - data.total_impulse().length()) 
-		<< "\nsteps: " << data.get_step()
-		<< "\nmethod: " << fm.get_method_name()
-		<< std::endl;
+	//std::cout << fabs(start_energy - data.total_energy()) << '\n'
+	//	<< fabs(start_impulse - data.total_impulse().length()) 
+	//	<< "\nsteps: " << data.get_step()
+	//	<< "\nmethod: " << fm.get_method_name()
+	//	<< std::endl;
 
 	getchar();
 	return 0;

@@ -28,6 +28,7 @@ private:
 
 	size_t total_step_time, total_write_time, total_calculate_err_time;
 
+	value_type E_0, P_0;
 
 	std::fstream filestream;
 

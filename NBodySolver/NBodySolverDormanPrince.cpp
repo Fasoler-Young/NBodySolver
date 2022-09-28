@@ -11,14 +11,30 @@ NBodySolverDormanPrince::NBodySolverDormanPrince(NBodyData* data) :NBodySolver(d
 }
 
 value_type NBodySolverDormanPrince::calculate_new_dt(value_type err, value_type dt) {
-	// h_new = h * min (fac_max, max(fac_min,	fac * (local_err / err)^1/5))
-	//		   dt		fac_max		1/fac_max	|			tmp				|
-	// fac_max ~ [1.5:5];
-	value_type fac_max = 3.; 
-	value_type tmp = 0.9 * pow((local_err / err), 1. / 5.);
-	value_type max = 1 / fac_max > tmp ? 1 / fac_max : tmp;
-	value_type min = fac_max < max ? fac_max : max;
-	return dt * min;
+	// h_new = h/max(0.1, min (5, ((err/local_err)^1/5)/0.9))
+	
+	value_type tmp = pow((err / local_err), 1. / 5.) / 0.9;
+	value_type min = 5 < tmp ? 5 : tmp;
+	value_type max = 0.1 > min ? 0.1 : min;
+	return dt / max;
+
+
+	//// h_new = h * min (fac_max, max(fac_min,	fac * (local_err / err)^1/5))
+	////		   dt		fac_max		1/fac_max	|			tmp				|
+	//// fac_max ~ [1.5:5];
+
+	//value_type fac_max = 3.; 
+	//value_type tmp = 0.9 * pow((local_err / err), 1. / 5.);
+	//value_type max = 1 / fac_max > tmp ? 1 / fac_max : tmp;
+	//value_type min = fac_max < max ? fac_max : max;
+	//return dt * min;
+}
+
+value_type NBodySolverDormanPrince::max_4(value_type a, value_type b, value_type c, value_type d)
+{
+	value_type max = a > b ? a : b;
+	value_type max2 = c > d ? c : d;
+	return max > max2 ? max : max2;
 }
 
 
@@ -27,22 +43,43 @@ bool NBodySolverDormanPrince::need_restep(value_type err) {
 }
 
 
-value_type NBodySolverDormanPrince::calculate_err(size_t count) {
+value_type NBodySolverDormanPrince::calculate_err(NBodyData* data, value_type dt) {
 	//return fabs(get_data()->last_total_energy() - get_data()->total_energy());
 
-	// eps = sqrt(1/n*sum((dt((x_end_i_4 - x_end_i_5)/max(10^-5, |x_end_i_4|, |x_start_i_4|, 2*round_err/local_err))^2)
+	// eps = sqrt(1/n*sum((dt((x_end_i_4 - x_end_i_5)/max(10^-5, |x_end_i_4|,	|x_start_i_4|, 2*round_err/local_err))^2)
+	//							d_coord_4   d_coord_5			fabs(d_coord_4)	 coord[body]			
+	size_t count = data->get_count();
+	vector3* coord = data->get_coord();
+	value_type err = -1.;
 
-
-	value_type err = -666.;
 	for (int body = 0; body < count; body++) {
-		value_type tmp = 0.;
+		vector3 d_coord_4, d_coord_5;
 		for (size_t i = 0; i < rank; i++) {
-			tmp += (B2[i] - B1[i]) * k_c[body][i].length();
+			d_coord_4 += k_c[body][i] * B1[i];
+			d_coord_5 += k_c[body][i] * B2[i];
 		}
-		if (err < tmp)
+		vector3 max = vector3(
+			max_4(1e-5, fabs(d_coord_4.x), fabs(coord[body].x), 2 * rounding_error / local_err),
+			max_4(1e-5, fabs(d_coord_4.y), fabs(coord[body].y), 2 * rounding_error / local_err),
+			max_4(1e-5, fabs(d_coord_4.z), fabs(coord[body].z), 2 * rounding_error / local_err)
+		);
+		value_type tmp = sqrt((((d_coord_4 - d_coord_5) * dt) / max).norm() / 3.);
+		if (tmp > err)
 			err = tmp;
 	}
-	return fabs(err);
+	return err;
+
+
+	//value_type err = -666.;
+	//for (int body = 0; body < count; body++) {
+	//	value_type tmp = 0.;
+	//	for (size_t i = 0; i < rank; i++) {
+	//		tmp += (B2[i] - B1[i]) * k_c[body][i].length();
+	//	}
+	//	if (err < tmp)
+	//		err = tmp;
+	//}
+	//return fabs(err);
 }
 
 
@@ -86,8 +123,10 @@ void NBodySolverDormanPrince::step(value_type* dt)
 	}
 
 	if (adaptive_step) {
-		value_type err = calculate_err(count);
+		value_type err = calculate_err( get_data(), *dt);
 		*dt = calculate_new_dt(err, *dt);
+		std::cout << err << "\t new_dt: " << *dt << std::endl;
+
 		if (need_restep(err)) {
 			std::cout << "Restep: old_dt: " << old_dt << "\tnew_dt: " << *dt << "\terr: " << err << std::endl;
 			step(dt);

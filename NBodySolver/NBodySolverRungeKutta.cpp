@@ -44,9 +44,13 @@ void NBodySolverRungeKutta::stepRK4(value_type* dt, vector3* d_coord, vector3* d
 	vector3* velosites = get_data()->get_velosites();
 	const value_type* mass = get_data()->get_mass();
 	size_t count = get_data()->get_count();
+	
+	std::vector<vector3> tmp1, tmp2;
 
-	if (d_coord == NULL) {
-		std::vector<vector3> tmp1(count), tmp2(count);
+	bool is_null = d_coord == NULL;
+	if (is_null) {
+		tmp1.resize(count);
+		tmp2.resize(count);
 		d_coord = tmp1.data();
 		d_v = tmp2.data();
 	}
@@ -77,10 +81,10 @@ void NBodySolverRungeKutta::stepRK4(value_type* dt, vector3* d_coord, vector3* d
 	}
 	#pragma omp parallel for
 	for (int body_id = 0; body_id < count; body_id++) {
-		vector3 total_force(get_data()->calculate_total_force(k3_c[body_id] / 2., body_id));
+		vector3 total_force(get_data()->calculate_total_force(k3_c[body_id], body_id));
 		k4_v[body_id] = total_force / mass[body_id] * *dt;
-		k4_c[body_id] = (velosites[body_id] + k3_v[body_id] / 2.) * *dt;
-		// TODO вынести изменение координат в отдельный цикл
+		k4_c[body_id] = (velosites[body_id] + k3_v[body_id]) * *dt;
+
 		d_coord[body_id] = ((k1_c[body_id] + k2_c[body_id] * 2 + k3_c[body_id] * 2 + k4_c[body_id]) / 6.);
 		d_v[body_id] = ((k1_v[body_id] + k2_v[body_id] * 2 + k3_v[body_id] * 2 + k4_v[body_id]) / 6.);
 
@@ -91,6 +95,11 @@ void NBodySolverRungeKutta::stepRK4(value_type* dt, vector3* d_coord, vector3* d
 		coord[body] += d_coord[body];
 	}
 	get_data()->increase_time(*dt);
+
+	//if (is_null) {
+	//	tmp1.clear();
+	//	tmp2.clear();
+	//}
 }
 
 std::string NBodySolverRungeKutta::method_name()

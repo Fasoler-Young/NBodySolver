@@ -27,9 +27,10 @@ private:
     bool adaptive_step = true;
 
     void resize_k(size_t count);
-    value_type calculate_err(size_t count);
+    value_type calculate_err(NBodyData* data, value_type dt);
     bool need_restep(value_type err);
     value_type calculate_new_dt(value_type err, value_type dt);
+    value_type max_4(value_type a, value_type b, value_type c, value_type d);
 
 public:
     NBodySolverDormanPrince(NBodyData* data);

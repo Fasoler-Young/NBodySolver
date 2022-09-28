@@ -19,6 +19,7 @@ class NBodyData
 	size_t count;
 	value_type time;
 	size_t step;
+	size_t count_of_function_calls;
 
 
 
@@ -54,6 +55,8 @@ public:
 	vector3* get_velosites();
 	const vector3* get_velosites() const;
 	const value_type* get_mass() const;
+	value_type get_potential_energy();
+	value_type get_kinetik_energy();
 
 	void load_galaxy(const char* path);
 	void add_body(std::vector<value_type> param);
@@ -72,7 +75,7 @@ public:
 	//void dump_body( size_t n );
 	size_t get_count() const;
 
-	void generate_galaxy( vector3 center, value_type radius, value_type total_mass, size_t count );
+	void generate_galaxy( vector3 center, value_type radius, value_type total_mass, size_t count, vector3 velosites );
 
 	vector3 total_impulse() const;
 	//vector3 total_impulce_moment() const;
@@ -93,10 +96,9 @@ public:
 		*correction = (new_sum - a) - corrected;
 		return new_sum;
 	}
-	//template<class V>
-	// V Kahan_sum_array(V a, V b);
 
 
+	size_t get_number_of_function_calls();
 };
 
 class MyCharCType : public std::ctype<char>
