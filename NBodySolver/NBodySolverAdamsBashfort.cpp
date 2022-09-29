@@ -39,7 +39,7 @@ void NBodySolverAdamsBashfort::step(value_type* dt)
 		prev_dv.erase(prev_dv.begin());
 		prev_dc.push_back(std::vector<vector3> (count));
 		prev_dv.push_back(std::vector<vector3>(count));
-//#pragma omp parallel for
+#pragma omp parallel for
 		for (int body = 0; body < count; body++) {
 			prev_dv[prev_dv.size() - 1][body] = get_data()->calculate_total_force(vector3(), body) / mass[body] * *dt;
 			for (size_t i = 0; i < rank; i++) {
@@ -49,7 +49,7 @@ void NBodySolverAdamsBashfort::step(value_type* dt)
 			}
 			velosites[body] = get_data()->Kahan_sum(velosites[body], dv[body], &corr_v[body]);
 		}
-//#pragma omp parallel for
+#pragma omp parallel for
 		for (int body = 0; body < count; body++) {
 			prev_dc[prev_dc.size() - 1][body] = velosites[body] * *dt;
 			for (size_t i = 0; i < rank; i++) {

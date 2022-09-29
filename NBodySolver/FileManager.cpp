@@ -42,9 +42,9 @@ void FileManager::create_galaxy(NBodyData* data)
 		size_t count;
 		filestream >> center.x >> center.y >> center.z
 			>> radius >> total_mass >> count;
-		value_type v = -1; //2.23606797749979;
-		data->generate_galaxy(center - vector3(1.5, 1, 0), radius, total_mass, count, vector3(0, -v, 0));
-		data->generate_galaxy(center + vector3(1.5, 1, 0), radius, total_mass, count, vector3(0, v, 0));
+		value_type v = -radius / 3 * 4; //2.23606797749979;
+		data->generate_galaxy(center - vector3(2*radius, radius/3*4, 0), radius, total_mass, count, vector3(0, -v, 0));
+		data->generate_galaxy(center + vector3(2 * radius, radius / 3 * 4, 0), radius, total_mass, count, vector3(0, v, 0));
 	}
 	else {
 		std::vector<value_type> param;
