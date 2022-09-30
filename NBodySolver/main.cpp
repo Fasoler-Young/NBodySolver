@@ -27,7 +27,6 @@ int main() {
 	value_type start_impulse = data.total_impulse().length();
 	bool need_dump = false;
 	fm.dump_galaxy(&data);
-	fm.dump_errors(&data);
 	while (data.get_time() < fm.get_end_time()) {
 
 		// Подгоняем следующий шаг под запись
