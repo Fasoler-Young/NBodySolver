@@ -70,7 +70,7 @@ public:
 	value_type calculate_total_potential_energy();
 	value_type calculate_total_kinetic_energy();
 	void calculate_total_energy();
-	vector3 calculate_total_force(vector3 d_coord, size_t id);
+	void calculate_total_force(vector3 * coord, vector3* dv);
 	//void dump_statistics();
 	//void dump_body( size_t n );
 	size_t get_count() const;

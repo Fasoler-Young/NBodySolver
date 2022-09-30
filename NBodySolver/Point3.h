@@ -82,6 +82,13 @@ public:
 		return *this;
 	}
 
+	Point3<T>& operator *= (const T V) {
+		x *= V;
+		y *= V;
+		z *= V;
+		return *this;
+	}
+
 	Point3<T> operator * (const T v) const {
 		return Point3(x * v, y * v, z * v);
 	}

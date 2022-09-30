@@ -6,7 +6,7 @@ void FileManager::create_solvers(NBodyData* data)
 	filestream >> solver_name;
 	// Нет смылсла оптимизировать, компилятор все равно удаляет ненужные
 	NBodySolverEuler* euler = new NBodySolverEuler(data);
-	NBodySolverRungeKutta* runge_kutta = new NBodySolverRungeKutta(data);
+	RK4* runge_kutta = new RK4(data);
 	NBodySolverDormanPrince* dormane_prince = new NBodySolverDormanPrince(data);
 	NBodySolverAdamsBashfort* adams = new NBodySolverAdamsBashfort(data);
 	if (!solver_name.compare(euler->method_name()))
@@ -216,9 +216,9 @@ void FileManager::log(NBodyData* data, value_type E_0, value_type P_0)
 	filestream << size_t(data->get_time() / dump_time) << '\t'
 		<< size_t(data->get_time() * 100) / 100. << '\t'
 		<< fabs(E_0 - data->total_energy()) << '\t'
-		<< fabs(P_0 - data->total_impulse().length()) << '\t'
-		<< total_step_time << '\t'
-		<< total_write_time << '\t'
+		<< fabs(P_0 - data->total_impulse().length()) << "\t \t"
+		<< total_step_time << "\t\t"
+		<< total_write_time << "\t\t"
 		<< total_calculate_err_time << '\t'
 		<< dt
 		<< std::endl;
@@ -234,9 +234,9 @@ void FileManager::log(NBodyData* data, value_type E_0, value_type P_0)
 	std::cout << size_t(data->get_time() / dump_time) << '\t'
 		<< size_t(data->get_time() * 100) / 100. << '\t'
 		<< fabs(E_0 - data->total_energy()) << '\t'
-		<< fabs(P_0 - data->total_impulse().length()) << '\t'
-		<< total_step_time << '\t'
-		<< total_write_time << '\t'
+		<< fabs(P_0 - data->total_impulse().length()) << "\t \t"
+		<< total_step_time << "\t\t"
+		<< total_write_time << "\t\t"
 		<< total_calculate_err_time << '\t'
 		<< dt << std::endl;
 	if (last_log) {

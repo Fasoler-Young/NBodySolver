@@ -180,17 +180,16 @@ value_type NBodyData::calculate_total_potential_energy()
 {
 	prev_tottal_potential_energy = current_total_potential_energy;
 	current_total_potential_energy = 0.;
+	value_type cor = 0.;
 	for (size_t body1 = 0; body1 < count; body1++) {
-		value_type pot_energy = 0.;
-		value_type cor = 0.;
-		for (size_t body2 = body1 + 1; body2 < count; body2++) {
-			//if (body1 == body2)
-			//	continue;
+		for (size_t body2 = 0; body2 < count; body2++) {
+			if (body1 == body2)
+				continue;
 			current_total_potential_energy = Kahan_sum(current_total_potential_energy, potential_energy(body1, body2), &cor);
 		}
 		// current_total_potential_energy += Kahan_sum(current_total_potential_energy, pot_energy, &cor);
 	}
-	//current_total_potential_energy /= 2;
+	current_total_potential_energy /= 2;
 	return current_total_potential_energy;
 }
 
@@ -211,16 +210,19 @@ void NBodyData::calculate_total_energy()
 	calculate_total_potential_energy();
 }
 
-vector3 NBodyData::calculate_total_force(vector3 d_coord, size_t id)
+void NBodyData::calculate_total_force(vector3 * coord, vector3* dv)
 {
-	vector3 total_force;
-	vector3 correction;
-	for (size_t body2 = 0; body2 < count; body2++) {
-		if(id != body2)
-			total_force = Kahan_sum(total_force, force(coord[id] + d_coord, coord[body2], mass[id], mass[body2]), &correction);
+#pragma omp parallel for
+	for (int body1 = 0; body1 < count; body1++) {
+		vector3 correction;
+		vector3 total_force;
+		for (size_t body2 = 0; body2 < count; body2++) {
+			if (body1 != body2)
+				total_force = Kahan_sum(total_force, force(coord[body1], coord[body2], mass[body1], mass[body2]) / mass[body1], &correction);
+		}
+		dv[body1] = total_force;
 	}
 	count_of_function_calls++;
-	return total_force;
 }
 
 

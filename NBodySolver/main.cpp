@@ -37,18 +37,18 @@ int main() {
 			// На данном этапе создандим флаг для понимания, что на следующем нужен дамп
 			//fm.set_dt(fm.next_dump_time(data.get_time()) - data.get_time());
 			need_dump = true;
-			//fm.calculate_condition(&data);
+			fm.calculate_condition(&data);
 		}
 		else if (need_dump) {
 			need_dump = false;
-			//fm.calculate_condition(&data);
+			fm.calculate_condition(&data);
 			fm.dump_galaxy(&data);
 			fm.dump_errors(&data);
 			fm.log(&data, start_energy, start_impulse);
 		} // Считаем энергию на предыдущем записи шаге, чтобы увидеть динамику
 		
 		fm.step();
-		fm.calculate_condition(&data);
+		//fm.calculate_condition(&data);
 
 	}
 	fm.dump_galaxy(&data);
