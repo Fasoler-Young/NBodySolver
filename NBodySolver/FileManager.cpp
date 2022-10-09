@@ -42,9 +42,9 @@ void FileManager::create_galaxy(NBodyData* data)
 		size_t count;
 		filestream >> center.x >> center.y >> center.z
 			>> radius >> total_mass >> count;
-		value_type v = -radius / 3 * 4; //2.23606797749979;
-		data->generate_galaxy(center - vector3(2*radius, radius/3*4, 0), radius, total_mass, count, vector3(0, -v, 0));
-		data->generate_galaxy(center + vector3(2 * radius, radius / 3 * 4, 0), radius, total_mass, count, vector3(0, v, 0));
+		value_type v = 0;// -radius * 1.75; //2.23606797749979;
+		data->generate_galaxy(center/* - vector3(1.6*radius, 0, 0)*/, radius, total_mass, count, vector3(0, -v, 0));
+		//data->generate_galaxy(center + vector3(1.6 * radius, 0, 0), radius, total_mass, count, vector3(0, v, 0));
 	}
 	else {
 		std::vector<value_type> param;
@@ -106,6 +106,18 @@ FileManager::FileManager(std::string path_conf, NBodyData* data)
 	E_0 = data->total_energy();
 	P_0 = data->total_impulse().length();
 	//}
+	//char tmp[255];
+	//sprintf_s(tmp, "%.e", dt);
+	//paths["path_data_output"] = get_path_data_output()
+	//	.replace(get_path_data_output().find("%dt"), 3, tmp)
+	//	.replace(get_path_data_output().find("%method"), 7, solver->method_name());
+	//paths["path_data_error"] = get_path_data_error()
+	//	.replace(get_path_data_error().find("%dt"), 3, tmp)
+	//	.replace(get_path_data_error().find("%method"), 7, solver->method_name());
+	//paths["path_log"] = get_path_log()
+	//	.replace(get_path_log().find("%dt"), 3, tmp)
+	//	.replace(get_path_log().find("%method"), 7, solver->method_name());
+
 	dump_step = size_t(ceil(end_time / dt / output_files_count));
 	dump_time = end_time / output_files_count;
 

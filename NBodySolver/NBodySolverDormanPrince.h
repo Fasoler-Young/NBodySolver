@@ -18,7 +18,7 @@ public:
     value_type local_err = 1e-18;
     size_t rank = 7;
     value_type rounding_error;
-    bool adaptive_step = false;
+    bool adaptive_step = true;
 
     void resize_k(size_t count);
     value_type calculate_err(NBodyData* data, value_type dt);
@@ -38,8 +38,6 @@ public:
 class RK4:public NBodySolverDormanPrince {
 private:
 
-    bool adaptive_step = false;
-    value_type local_err = 1e-18;
 public:
     RK4(NBodyData* data):NBodySolverDormanPrince(data){
         rank = 4;
